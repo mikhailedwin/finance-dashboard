@@ -1,0 +1,83 @@
+name: Refresh data & deploy
+
+# One workflow does the refresh AND the deploy, deliberately.
+#
+# Commits pushed with GITHUB_TOKEN do not trigger further workflow runs. Split
+# across two workflows (refresh -> commit -> "on: push" deploy), the deploy would
+# simply never fire and the site would quietly go stale. Keeping both steps in a
+# single job also means the same run that fetched the data is the one that
+# publishes it.
+
+on:
+  push:
+    branches:
+      - main
+      - claude/us-economic-dashboard-0692xt
+  schedule:
+    # 13:10 UTC on weekdays — after the 08:30 ET window when most US releases land.
+    - cron: '10 13 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      skip_refresh:
+        description: 'Deploy the committed snapshot without re-fetching FRED'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+# Never let two deploys race; let a running one finish so a half-published
+# site is not left behind.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Refresh data from FRED
+        if: ${{ inputs.skip_refresh != true }}
+        run: npm run refresh:data
+
+      - name: Commit refreshed snapshot
+        if: ${{ inputs.skip_refresh != true && github.event_name != 'pull_request' }}
+        run: |
+          if [[ -z "$(git status --porcelain public/data)" ]]; then
+            echo "No data changes to commit."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data
+          git commit -m "chore(data): refresh FRED snapshot ($(date -u +%Y-%m-%d))"
+          # Rebase in case a human pushed while this run was in flight.
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Build
+        run: npm run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

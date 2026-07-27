@@ -1,0 +1,167 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens.
+ *
+ * Light values sit on :root; dark values are declared twice — once behind the
+ * OS preference (guarded so an explicit light choice still wins) and once behind
+ * the explicit toggle. Every token is exposed to Tailwind via `@theme inline`,
+ * so utilities such as `bg-surface` follow the theme without a `dark:` variant.
+ *
+ * Series colours are the validated categorical slots; see README.
+ */
+
+:root {
+  --page: #f6f7f9;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --ink: #0d1117;
+  --ink-secondary: #4a5259;
+  --ink-muted: #6b7480;
+  --grid: #e8eaed;
+  --axis: #d4d8dd;
+  --border: rgba(13, 17, 23, 0.1);
+  --border-strong: rgba(13, 17, 23, 0.16);
+
+  /* Categorical slots 1–2 (the only identity colours this dashboard needs). */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+
+  /* Diverging pair for values that cross zero. */
+  --diverge-pos: #2a78d6;
+  --diverge-neg: #d03b3b;
+
+  /* Status — fixed, never themed, never reused as a series colour. */
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+
+  /* Recession shading: context, not data, so it stays neutral. */
+  --recession: rgba(13, 17, 23, 0.07);
+
+  --shadow-card: 0 1px 2px rgba(13, 17, 23, 0.04), 0 1px 3px rgba(13, 17, 23, 0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --page: #0d0f11;
+    --surface: #141618;
+    --surface-raised: #191c1f;
+    --ink: #f2f4f6;
+    --ink-secondary: #a8b0b8;
+    --ink-muted: #7d868f;
+    --grid: #22262a;
+    --axis: #2e3338;
+    --border: rgba(242, 244, 246, 0.1);
+    --border-strong: rgba(242, 244, 246, 0.16);
+
+    --series-1: #3987e5;
+    --series-2: #d95926;
+
+    --diverge-pos: #3987e5;
+    --diverge-neg: #e66767;
+
+    --recession: rgba(242, 244, 246, 0.07);
+
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.25);
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --page: #0d0f11;
+  --surface: #141618;
+  --surface-raised: #191c1f;
+  --ink: #f2f4f6;
+  --ink-secondary: #a8b0b8;
+  --ink-muted: #7d868f;
+  --grid: #22262a;
+  --axis: #2e3338;
+  --border: rgba(242, 244, 246, 0.1);
+  --border-strong: rgba(242, 244, 246, 0.16);
+
+  --series-1: #3987e5;
+  --series-2: #d95926;
+
+  --diverge-pos: #3987e5;
+  --diverge-neg: #e66767;
+
+  --recession: rgba(242, 244, 246, 0.07);
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.25);
+
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-ink: var(--ink);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-muted: var(--ink-muted);
+  --color-grid: var(--grid);
+  --color-axis: var(--axis);
+  --color-edge: var(--border);
+  --color-edge-strong: var(--border-strong);
+
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+
+  --color-good: var(--status-good);
+  --color-warning: var(--status-warning);
+  --color-serious: var(--status-serious);
+  --color-critical: var(--status-critical);
+
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Recharts puts focus outlines on its wrappers; we manage our own. */
+.recharts-wrapper:focus,
+.recharts-surface:focus {
+  outline: none;
+}
+
+/* Tabular figures only where numbers must line up in a column. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print: force a light surface so charts stay legible on paper. */
+@media print {
+  :root {
+    --page: #ffffff;
+    --surface: #ffffff;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

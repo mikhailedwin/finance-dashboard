@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Leading and coincident indicators of the US economy — inflation, rates, labour, the consumer, housing, credit and the dollar — with full historical context and recession signals."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <title>US Economic Indicators Dashboard</title>
+    <script>
+      // Apply the saved theme before first paint so a dark-mode reader never
+      // sees a white flash while the bundle loads.
+      (function () {
+        try {
+          var saved = localStorage.getItem('econ-dashboard-theme');
+          if (saved === 'light' || saved === 'dark') {
+            document.documentElement.setAttribute('data-theme', saved);
+          }
+        } catch (e) {
+          /* storage unavailable — fall back to the OS preference */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
