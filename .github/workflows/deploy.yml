@@ -73,7 +73,13 @@ jobs:
       - name: Build
         run: npm run build
 
+      # `enablement: true` switches the Pages source to "GitHub Actions".
+      # Without it a repo that has never had Pages configured defaults to
+      # branch-based serving, which publishes the raw repository root — the
+      # unbuilt index.html pointing at /src/main.tsx — instead of dist/.
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
