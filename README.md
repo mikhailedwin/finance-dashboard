@@ -78,17 +78,26 @@ Pushes to the default branch, and a weekday schedule, run
 `.github/workflows/deploy.yml`: it refreshes the data, commits the snapshot if it
 changed, builds, and deploys to GitHub Pages.
 
-No manual setup is needed — the workflow sets the Pages source to **GitHub
-Actions** itself via the API before deploying.
+### Required one-time setup
 
-That step exists because it is a real trap. If Pages is left in its default
-branch-serving mode, GitHub runs its own *pages build and deployment* on every
-push, publishing the **raw repository root**: the unbuilt `index.html` that still
-points at `/src/main.tsx`, with every `data/*.json` returning 404. It races the
-workflow's artifact and wins intermittently, so the site appears to deploy fine
-and then breaks. `actions/configure-pages` does not prevent it — its `enablement`
-input only creates Pages when absent and will not change the build type of a site
-that already exists.
+In **Settings → Pages**, set **Source** to **GitHub Actions**.
+
+This cannot be automated, and the site will not work until it is done. Until the
+source is switched, GitHub also runs its own *pages build and deployment* on every
+push, which publishes the **raw repository root** — the unbuilt `index.html` that
+still points at `/src/main.tsx`, with every `data/*.json` returning 404. That
+build races the workflow's artifact and wins intermittently, so the deploy reports
+success and the site works for about a minute before reverting.
+
+Two things that look like they should fix this but do not:
+
+- `actions/configure-pages` with `enablement: true` only *creates* Pages when it
+  has never been enabled. It will not change the build type of an existing site.
+- Calling `PUT /repos/{owner}/{repo}/pages` with `build_type: workflow` from the
+  workflow returns **403 "Resource not accessible by integration"**. Changing the
+  Pages source requires repository admin rights, which `GITHUB_TOKEN` does not
+  have — the `pages: write` permission covers creating deployments, not
+  reconfiguring the source.
 
 Refresh and deploy are deliberately a single workflow. Commits pushed with
 `GITHUB_TOKEN` do not trigger further workflow runs, so splitting them would mean
