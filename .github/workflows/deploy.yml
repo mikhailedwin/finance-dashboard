@@ -73,10 +73,38 @@ jobs:
       - name: Build
         run: npm run build
 
-      # `enablement: true` switches the Pages source to "GitHub Actions".
-      # Without it a repo that has never had Pages configured defaults to
-      # branch-based serving, which publishes the raw repository root — the
-      # unbuilt index.html pointing at /src/main.tsx — instead of dist/.
+      # Force the Pages source to "GitHub Actions".
+      #
+      # If Pages is already enabled in branch mode, GitHub runs its own
+      # "pages build and deployment" on every push, which serves the raw
+      # repository root — the unbuilt index.html pointing at /src/main.tsx,
+      # with every data/*.json 404ing — and races this workflow's artifact.
+      # `configure-pages` alone does not fix that: its `enablement` input only
+      # creates Pages when absent, it does not change the build type of a site
+      # that already exists. Setting build_type explicitly does.
+      - name: Force Pages to deploy from Actions, not the branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          code=$(curl -sS -o /tmp/pages.json -w '%{http_code}' -X PUT \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pages" \
+            -d '{"build_type":"workflow"}')
+          echo "PUT /pages -> $code"
+          if [ "$code" = "404" ]; then
+            # Pages not enabled yet; create it directly in workflow mode.
+            code=$(curl -sS -o /tmp/pages.json -w '%{http_code}' -X POST \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/pages" \
+              -d '{"build_type":"workflow"}')
+            echo "POST /pages -> $code"
+          fi
+          # 204/201 are success; anything else is worth seeing in the log but
+          # should not fail the run, since configure-pages may still succeed.
+          cat /tmp/pages.json 2>/dev/null || true
+
       - uses: actions/configure-pages@v5
         with:
           enablement: true
